@@ -1,6 +1,9 @@
+"""Tests for the webhook module."""
+
 import os
 from unittest.mock import AsyncMock, patch
 
+import httpx
 from fastapi.testclient import TestClient
 
 # Set environment variables BEFORE importing app
@@ -15,7 +18,8 @@ from main import app
 client = TestClient(app)
 
 
-def test_verify_webhook():
+def test_verify_webhook() -> None:
+    """Test verification with correct token."""
     response = client.get(
         "/",
         params={
@@ -28,7 +32,8 @@ def test_verify_webhook():
     assert response.text == "12345"
 
 
-def test_verify_webhook_invalid_token():
+def test_verify_webhook_invalid_token() -> None:
+    """Test verification with incorrect token."""
     response = client.get(
         "/",
         params={
@@ -40,11 +45,9 @@ def test_verify_webhook_invalid_token():
     assert response.status_code == 403
 
 
-import httpx
-
-
 @patch("httpx.AsyncClient.post", new_callable=AsyncMock)
-def test_webhook_message_processing(mock_post):
+def test_webhook_message_processing(mock_post: AsyncMock) -> None:
+    """Test processing of a webhook message."""
     # Mock successful response from LangGraph
     mock_post.return_value = httpx.Response(200, json={"status": "success"})
 

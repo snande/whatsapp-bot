@@ -1,3 +1,5 @@
+"""Main entry point for the WhatsApp Bot."""
+
 import logging
 import os
 
@@ -18,7 +20,7 @@ langgraph_url = os.environ.get("LANGGRAPH_URL")
 langgraph_api_key = os.environ.get("LANGGRAPH_API_KEY")
 
 
-async def forward_to_langgraph(message_body: str, sender_id: str):
+async def forward_to_langgraph(message_body: str, sender_id: str) -> None:
     """Forwards the message to the LangGraph deployment."""
     if not langgraph_url:
         logger.error("LANGGRAPH_URL is not set. Cannot forward message.")
@@ -64,12 +66,15 @@ async def forward_to_langgraph(message_body: str, sender_id: str):
 
 # Route for GET requests (verification)
 @app.get("/")
-async def verify_webhook(request: Request):
+async def verify_webhook(request: Request) -> int:
+    """Verify the webhook with WhatsApp."""
     mode = request.query_params.get("hub.mode")
     challenge = request.query_params.get("hub.challenge")
     token = request.query_params.get("hub.verify_token")
 
     if mode == "subscribe" and token == verify_token:
+        if not challenge:
+            raise HTTPException(status_code=400, detail="Missing challenge")
         print("WEBHOOK VERIFIED")
         return int(challenge)
     else:
@@ -78,7 +83,8 @@ async def verify_webhook(request: Request):
 
 # Route for POST requests (receive webhook)
 @app.post("/")
-async def receive_webhook(request: Request, background_tasks: BackgroundTasks):
+async def receive_webhook(request: Request, background_tasks: BackgroundTasks) -> dict[str, str]:
+    """Receive and process webhook messages."""
     # timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     try:
         body = await request.json()
@@ -112,7 +118,8 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks):
 
 
 @app.get("/health")
-async def health_check():
+async def health_check() -> dict[str, str]:
+    """Check the health of the application."""
     return {"status": "ok"}
 
 
