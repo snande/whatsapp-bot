@@ -13,7 +13,7 @@ if "LANGGRAPH_URL" not in os.environ:
 if "LANGGRAPH_API_KEY" not in os.environ:
     os.environ["LANGGRAPH_API_KEY"] = "test_api_key"
 
-from main import app
+from whatsapp_bot.main import app
 
 client = TestClient(app)
 
@@ -108,6 +108,24 @@ def test_webhook_message_processing(mock_post: AsyncMock) -> None:
 
     # Check Headers
     assert kwargs["headers"]["Authorization"] == "Bearer test_api_key"
+
+
+def test_webhook_invalid_payload() -> None:
+    """Test processing of an invalid webhook payload."""
+    payload = {
+        "object": "whatsapp_business_account",
+        "entry": [
+            {
+                "id": "12345",
+                # Missing 'changes' field
+            }
+        ],
+    }
+
+    response = client.post("/", json=payload)
+    # Pydantic validation checks happen before the handler body is executed
+    # Invalid payload should result in 422 Unprocessable Entity
+    assert response.status_code == 422
 
 
 if __name__ == "__main__":

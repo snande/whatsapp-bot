@@ -38,4 +38,18 @@ export LANGGRAPH_API_KEY="your_langgraph_api_key_here" # Optional, if required
 
 -   **Webhook URL:** `http://<ngrok-url>/`
 -   **Verify Token:** The value of `VERIFY_TOKEN`
--   **LangGraph Integration:** Received messages are forwarded to the configured LangGraph URL.
+
+## Development
+
+### Running Tests
+
+To run the tests, use the following command:
+
+```bash
+poetry run pytest
+```
+
+### Code Style
+
+This project follows Google-style docstrings and uses Pydantic for data validation.
+

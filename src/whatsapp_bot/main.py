@@ -5,13 +5,26 @@ import os
 
 import httpx
 import uvicorn
+from dotenv import load_dotenv
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+
+from whatsapp_bot.schemas.langgraph import (
+    LangGraphConfig,
+    LangGraphConfigurable,
+    LangGraphInput,
+    LangGraphMessage,
+    LangGraphPayload,
+)
+from whatsapp_bot.schemas.whatsapp import WhatsAppWebhook
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
+
+# Load environment variables
+load_dotenv()
 
 # Set port and verify_token
 port = int(os.environ.get("PORT", 3000))
@@ -20,8 +33,19 @@ langgraph_url = os.environ.get("LANGGRAPH_URL")
 langgraph_api_key = os.environ.get("LANGGRAPH_API_KEY")
 
 
+# --- Functions ---
+
+
 async def forward_to_langgraph(message_body: str, sender_id: str) -> None:
-    """Forwards the message to the LangGraph deployment."""
+    """Forwards the message to the LangGraph deployment.
+
+    Args:
+        message_body: The content of the message.
+        sender_id: The ID of the sender (phone number).
+
+    Returns:
+        None
+    """
     if not langgraph_url:
         logger.error("LANGGRAPH_URL is not set. Cannot forward message.")
         return
@@ -32,24 +56,20 @@ async def forward_to_langgraph(message_body: str, sender_id: str) -> None:
     if langgraph_api_key:
         headers["Authorization"] = f"Bearer {langgraph_api_key}"
 
-    # Construct the payload for LangGraph
-    # Assuming a standard graph that accepts "messages" or "input"
-    payload = {
-        "input": {
-            "messages": [
-                {
-                    "role": "user",
-                    "content": message_body,
-                    "additional_kwargs": {"sender_id": sender_id},
-                }
+    # Construct the payload for LangGraph using Pydantic models
+    payload_model = LangGraphPayload(
+        input=LangGraphInput(
+            messages=[
+                LangGraphMessage(
+                    role="user",
+                    content=message_body,
+                    additional_kwargs={"sender_id": sender_id},
+                )
             ]
-        },
-        "config": {
-            "configurable": {
-                "thread_id": sender_id  # Use sender_id as thread_id for continuity
-            }
-        },
-    }
+        ),
+        config=LangGraphConfig(configurable=LangGraphConfigurable(thread_id=sender_id)),
+    )
+    payload = payload_model.model_dump()
 
     try:
         async with httpx.AsyncClient() as client:
@@ -64,10 +84,19 @@ async def forward_to_langgraph(message_body: str, sender_id: str) -> None:
         logger.error(f"Error forwarding to LangGraph: {str(e)}")
 
 
-# Route for GET requests (verification)
 @app.get("/")
 async def verify_webhook(request: Request) -> int:
-    """Verify the webhook with WhatsApp."""
+    """Verify the webhook with WhatsApp.
+
+    Args:
+        request: The incoming request object.
+
+    Returns:
+        The challenge string cast to an integer, if verification is successful.
+
+    Raises:
+        HTTPException: If verification fails or challenge is missing.
+    """
     mode = request.query_params.get("hub.mode")
     challenge = request.query_params.get("hub.challenge")
     token = request.query_params.get("hub.verify_token")
@@ -81,28 +110,30 @@ async def verify_webhook(request: Request) -> int:
         raise HTTPException(status_code=403, detail="Forbidden")
 
 
-# Route for POST requests (receive webhook)
 @app.post("/")
-async def receive_webhook(request: Request, background_tasks: BackgroundTasks) -> dict[str, str]:
-    """Receive and process webhook messages."""
-    # timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+async def receive_webhook(
+    body: WhatsAppWebhook, background_tasks: BackgroundTasks
+) -> dict[str, str]:
+    """Receive and process webhook messages.
+
+    Args:
+        body: The parsed WhatsApp webhook payload.
+        background_tasks: FastAPI background tasks handler.
+
+    Returns:
+        A status dictionary.
+    """
     try:
-        body = await request.json()
-
-        # Log the full incoming payload for debugging
-        # print(f"\n\nWebhook received {timestamp}\n")
-        # print(json.dumps(body, indent=2))
-
         # Check if this is a message from WhatsApp
-        if body.get("object") == "whatsapp_business_account":
-            for entry in body.get("entry", []):
-                for change in entry.get("changes", []):
-                    value = change.get("value", {})
-                    if "messages" in value:
-                        for message in value["messages"]:
-                            if message.get("type") == "text":
-                                message_body = message["text"]["body"]
-                                sender_id = message["from"]
+        if body.object == "whatsapp_business_account":
+            for entry in body.entry:
+                for change in entry.changes:
+                    value = change.value
+                    if value.messages:
+                        for message in value.messages:
+                            if message.type == "text" and message.text:
+                                message_body = message.text.body
+                                sender_id = message.from_
                                 logger.info(f"Received message from {sender_id}: {message_body}")
 
                                 # Forward to LangGraph in background to respond quickly to WhatsApp
@@ -119,11 +150,14 @@ async def receive_webhook(request: Request, background_tasks: BackgroundTasks) -
 
 @app.get("/health")
 async def health_check() -> dict[str, str]:
-    """Check the health of the application."""
+    """Check the health of the application.
+
+    Returns:
+        A status dictionary.
+    """
     return {"status": "ok"}
 
 
-# Start the server
 if __name__ == "__main__":
     print(f"\nListening on port {port}\n")
     uvicorn.run(app, host="0.0.0.0", port=port)
