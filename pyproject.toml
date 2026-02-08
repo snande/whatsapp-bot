@@ -27,6 +27,7 @@ packages = [{include = "whatsapp_bot", from = "src"}]
 pytest = "^9.0.2"
 mypy = "^1.19.1"
 ruff = "^0.15.0"
+pip-licenses = "^5.5.1"
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
