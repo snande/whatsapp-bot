@@ -5,9 +5,16 @@ from langgraph.graph import END, START, MessagesState, StateGraph
 
 
 def echo_node(state: MessagesState) -> dict[str, list[HumanMessage]]:
-    """Echoes the last message."""
+    """Echoes the last message.
+
+    Args:
+        state: The current state of the conversation.
+
+    Returns:
+        A dictionary containing the echoed message.
+    """
     last_message = state["messages"][-1]
-    # Simple echo logic
+    # Create a new HumanMessage with "Echo: " prefix as the response
     return {"messages": [HumanMessage(content=f"Echo: {last_message.content}")]}
 
 
