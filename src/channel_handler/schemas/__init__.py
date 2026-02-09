@@ -5,7 +5,6 @@ from .langgraph import (
     LangGraphConfigurable,
     LangGraphInput,
     LangGraphMessage,
-    LangGraphPayload,
 )
 from .whatsapp import (
     WhatsAppChange,
@@ -21,7 +20,6 @@ __all__ = [
     "LangGraphConfigurable",
     "LangGraphInput",
     "LangGraphMessage",
-    "LangGraphPayload",
     "WhatsAppChange",
     "WhatsAppEntry",
     "WhatsAppMessage",

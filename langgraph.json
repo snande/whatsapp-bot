@@ -1,0 +1,9 @@
+{
+    "dependencies": [
+        "."
+    ],
+    "graphs": {
+        "agent": "./src/intelligence/graphs/simple_graph.py:graph"
+    },
+    "env": ".env"
+}

@@ -3,17 +3,16 @@
 import logging
 import os
 
-import httpx
 import uvicorn
 from dotenv import load_dotenv
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
+from langgraph_sdk import get_client
 
 from channel_handler.schemas.langgraph import (
     LangGraphConfig,
     LangGraphConfigurable,
     LangGraphInput,
     LangGraphMessage,
-    LangGraphPayload,
 )
 from channel_handler.schemas.whatsapp import WhatsAppWebhook
 
@@ -59,30 +58,29 @@ async def forward_to_langgraph(message_body: str, sender_id: str) -> None:
     if langgraph_api_key:
         headers["Authorization"] = f"Bearer {langgraph_api_key}"
 
-    # Construct the payload for LangGraph using Pydantic models
-    payload_model = LangGraphPayload(
-        input=LangGraphInput(
-            messages=[
-                LangGraphMessage(
-                    role="user",
-                    content=message_body,
-                    additional_kwargs={"sender_id": sender_id},
-                )
-            ]
-        ),
-        config=LangGraphConfig(configurable=LangGraphConfigurable(thread_id=sender_id)),
+    # Construct the input and config
+    graph_input = LangGraphInput(
+        messages=[
+            LangGraphMessage(
+                role="user",
+                content=message_body,
+                additional_kwargs={"sender_id": sender_id},
+            )
+        ]
     )
-    payload = payload_model.model_dump()
+    graph_config = LangGraphConfig(configurable=LangGraphConfigurable(thread_id=sender_id))
 
     try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(langgraph_url, json=payload, headers=headers)
-            response.raise_for_status()
-            logger.info(f"LangGraph response: {response.json()}")
-    except httpx.HTTPStatusError as e:
-        logger.error(
-            f"LangGraph request failed with status {e.response.status_code}: {e.response.text}"
+        client = get_client(url=langgraph_url, api_key=langgraph_api_key)
+        # Using the standard SDK to create a run
+        # Note: We pass the assistant_id (graph_id) which is "agent" in this case
+        run = await client.runs.create(  # type: ignore[call-overload]
+            thread_id=sender_id,
+            assistant_id="agent",
+            input=graph_input.model_dump(),
+            config=graph_config.model_dump(),
         )
+        logger.info(f"LangGraph run created: {run}")
     except Exception:
         logger.exception("Error forwarding to LangGraph")
 

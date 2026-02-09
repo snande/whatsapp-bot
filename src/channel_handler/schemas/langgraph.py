@@ -29,10 +29,3 @@ class LangGraphConfig(BaseModel):
     """Represents the configuration for LangGraph."""
 
     configurable: LangGraphConfigurable
-
-
-class LangGraphPayload(BaseModel):
-    """Represents the complete payload sent to LangGraph."""
-
-    input: LangGraphInput
-    config: LangGraphConfig
