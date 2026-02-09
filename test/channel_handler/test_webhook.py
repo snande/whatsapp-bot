@@ -13,7 +13,7 @@ if "LANGGRAPH_URL" not in os.environ:
 if "LANGGRAPH_API_KEY" not in os.environ:
     os.environ["LANGGRAPH_API_KEY"] = "test_api_key"
 
-from whatsapp_bot.main import app
+from channel_handler.main import app
 
 client = TestClient(app)
 

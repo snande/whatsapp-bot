@@ -20,7 +20,7 @@ dependencies = [
 
 
 [tool.poetry]
-packages = [{include = "whatsapp_bot", from = "src"}]
+packages = [{include = "channel_handler", from = "src"}]
 
 
 [tool.poetry.group.dev.dependencies]
@@ -54,7 +54,7 @@ ignore = []
 
 
 [tool.ruff.lint.isort]
-known-first-party = ["whatsapp_bot"]
+known-first-party = ["channel_handler"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -68,7 +68,7 @@ ignore-fully-untyped = false
 
 [tool.mypy]
 python_version = "3.12"
-files = ["src/whatsapp_bot", "tests"]
+files = ["src/channel_handler", "tests"]
 strict = true
 disallow_untyped_defs = true
 no_implicit_optional = true

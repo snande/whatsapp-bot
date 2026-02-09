@@ -12,11 +12,11 @@ A simple WhatsApp bot using FastAPI and ngrok for local development, integrated 
 
 2.  **Run the server:**
     ```bash
-    poetry run python src/whatsapp_bot/main.py
+    poetry run python src/channel_handler/main.py
     ```
     Or using uvicorn directly:
     ```bash
-    poetry run uvicorn whatsapp_bot.main:app --reload
+    poetry run uvicorn channel_handler.main:app --reload
     ```
 
 3.  **Expose the server with ngrok:**

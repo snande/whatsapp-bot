@@ -8,14 +8,14 @@ import uvicorn
 from dotenv import load_dotenv
 from fastapi import BackgroundTasks, FastAPI, HTTPException, Request
 
-from whatsapp_bot.schemas.langgraph import (
+from channel_handler.schemas.langgraph import (
     LangGraphConfig,
     LangGraphConfigurable,
     LangGraphInput,
     LangGraphMessage,
     LangGraphPayload,
 )
-from whatsapp_bot.schemas.whatsapp import WhatsAppWebhook
+from channel_handler.schemas.whatsapp import WhatsAppWebhook
 
 # Configure logging
 logging.basicConfig(
