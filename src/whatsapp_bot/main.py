@@ -18,7 +18,10 @@ from whatsapp_bot.schemas.langgraph import (
 from whatsapp_bot.schemas.whatsapp import WhatsAppWebhook
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+)
 logger = logging.getLogger(__name__)
 
 app = FastAPI()
@@ -80,8 +83,8 @@ async def forward_to_langgraph(message_body: str, sender_id: str) -> None:
         logger.error(
             f"LangGraph request failed with status {e.response.status_code}: {e.response.text}"
         )
-    except Exception as e:
-        logger.error(f"Error forwarding to LangGraph: {str(e)}")
+    except Exception:
+        logger.exception("Error forwarding to LangGraph")
 
 
 @app.get("/")
@@ -104,7 +107,7 @@ async def verify_webhook(request: Request) -> int:
     if mode == "subscribe" and token == verify_token:
         if not challenge:
             raise HTTPException(status_code=400, detail="Missing challenge")
-        print("WEBHOOK VERIFIED")
+        logger.info("Webhook verified successfully")
         return int(challenge)
     else:
         raise HTTPException(status_code=403, detail="Forbidden")
@@ -142,10 +145,10 @@ async def receive_webhook(
                                 )
 
         return {"status": "ok"}
-    except Exception as e:
-        logger.error(f"Error processing webhook: {str(e)}")
+    except Exception:
+        logger.exception("Error processing webhook")
         # Return 200 anyway to prevent WhatsApp from retrying indefinitely on bad logic
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "Internal Server Error"}
 
 
 @app.get("/health")
@@ -159,5 +162,5 @@ async def health_check() -> dict[str, str]:
 
 
 if __name__ == "__main__":
-    print(f"\nListening on port {port}\n")
+    logger.info(f"Listening on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
